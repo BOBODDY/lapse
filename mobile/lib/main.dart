@@ -1,4 +1,3 @@
-import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong/latlong.dart';
@@ -7,9 +6,13 @@ import 'package:mapping/model/place.dart';
 import 'package:mapping/new_place.dart';
 import 'package:mapping/store.dart';
 
-void main() => runApp(new MyApp());
+void main() => runApp(new MyApp(PlaceStore()));
 
 class MyApp extends StatelessWidget {
+  PlaceStore placeStore;
+
+  MyApp(this.placeStore)
+
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
@@ -17,13 +20,15 @@ class MyApp extends StatelessWidget {
       theme: new ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: new MyHomePage(title: 'Maps'),
+      home: new MyHomePage(title: 'Maps', store: placeStore),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+  PlaceStore store;
+
+  MyHomePage({Key key, this.title, this.store}) : super(key: key);
 
   final String title;
 
@@ -34,7 +39,6 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   Location location = new Location();
   MapController controller;
-  PlaceStore store = PlaceStore();
 
   @override
   void initState() {
@@ -46,13 +50,11 @@ class _MyHomePageState extends State<MyHomePage> {
     var latLng =
         LatLng(currentLocation['latitude'], currentLocation['longitude']);
     Navigator.push(context,
-        MaterialPageRoute(builder: (context) => CreateNewPlacePage(latLng)));
+        MaterialPageRoute(builder: (context) => CreateNewPlacePage(latLng, widget.store)));
   }
 
   @override
   Widget build(BuildContext context) {
-    
-    
     return new Scaffold(
       appBar: new AppBar(
         title: new Text(widget.title),
@@ -61,36 +63,19 @@ class _MyHomePageState extends State<MyHomePage> {
           stream: location.onLocationChanged(),
           builder: (BuildContext context,
               AsyncSnapshot<Map<String, double>> locationSnapshot) {
-            
-            StreamBuilder<List<Place>>(
-              stream: store.getPlaces().asStream(),
-              builder: (context, markersSnapshot) {
-                final locationMarker = locationSnapshot.data != null
-                    ? buildLocationMarker(locationSnapshot.data)
-                    : null;
+            final locationMarker = locationSnapshot.data != null
+                ? buildLocationMarker(locationSnapshot.data)
+                : null;
 
-                final placeMarkers = markersSnapshot.data != null
-                    ? markersSnapshot.data
-                        .map((place) => buildPlaceMarker(place)).toList()
-                    : [];
-
-                var markers = placeMarkers.toList(growable: true);
-                if (locationMarker == null) {
-                  markers.add(locationMarker);
-                }
-
-                final markerLayer = MarkerLayerOptions(
-                  markers: markers,
-                );
-
-                return FlutterMap(
-                    mapController: controller,
-                    options: new MapOptions(
-                        center: new LatLng(33.7661, -84.3726), zoom: 13.0),
-                    layers: [buildTileLayer(), markerLayer]);
-              },
+            final markerLayer = MarkerLayerOptions(
+              markers: [locationMarker],
             );
-            
+
+            return FlutterMap(
+                mapController: controller,
+                options: new MapOptions(
+                    center: new LatLng(33.7661, -84.3726), zoom: 13.0),
+                layers: [buildTileLayer(), markerLayer]);
           }),
       floatingActionButton: new FloatingActionButton(
         onPressed: _addNew,
