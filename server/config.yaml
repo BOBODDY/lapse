@@ -1,0 +1,1 @@
+database: postgres://dart_app:dart@localhost:5432/my_database_name

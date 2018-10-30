@@ -9,8 +9,8 @@ class _LapsePhoto {
   int id;
 
   DateTime date;
-  String image;
+  String image; // URL where image is stored
 
-  @Relate(#photos, onDelete: DeleteRule.cascade, isRequired: true)
+  @Relate(#photos)
   Lapse lapse;
 }

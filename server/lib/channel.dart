@@ -21,14 +21,25 @@ class LapseServerChannel extends ApplicationChannel {
     logger.onRecord.listen(
         (rec) => print("$rec ${rec.error ?? ""} ${rec.stackTrace ?? ""}"));
 
-    final dataModel = ManagedDataModel.fromCurrentMirrorSystem();
-    final psc = PostgreSQLPersistentStore.fromConnectionInfo(
-        "lapse_server_user", "password", "localhost", 5432, "lapse_server");
+    final config = LapseConfiguraton(options.configurationFilePath);
 
-    context = ManagedContext(dataModel, psc);
+    context = contextWithConnectionInfo(config.database);
 
     final authStorage = ManagedAuthDelegate<User>(context);
     authServer = AuthServer(authStorage);
+  }
+
+  ManagedContext contextWithConnectionInfo(
+      DatabaseConfiguration connectionInfo) {
+    final dataModel = ManagedDataModel.fromCurrentMirrorSystem();
+    final psc = PostgreSQLPersistentStore(
+        connectionInfo.username,
+        connectionInfo.password,
+        connectionInfo.host,
+        connectionInfo.port,
+        connectionInfo.databaseName);
+
+    return ManagedContext(dataModel, psc);
   }
 
   /// Construct the request channel.
@@ -41,13 +52,9 @@ class LapseServerChannel extends ApplicationChannel {
   Controller get entryPoint {
     final router = Router();
 
-    router
-      .route("/auth/register")
-      .link(() => AuthCodeController(authServer));
+    router.route("/auth/register").link(() => AuthCodeController(authServer));
 
-    router
-        .route("/auth/token")
-        .link(() => AuthController(authServer));
+    router.route("/auth/token").link(() => AuthController(authServer));
 
     router
         .route("/lapses/[:id]")
@@ -56,4 +63,10 @@ class LapseServerChannel extends ApplicationChannel {
 
     return router;
   }
+}
+
+class LapseConfiguraton extends Configuration {
+  DatabaseConfiguration database;
+
+  LapseConfiguraton(String filename) : super.fromFile(File(filename));
 }
