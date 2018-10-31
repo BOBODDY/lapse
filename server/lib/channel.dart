@@ -1,3 +1,6 @@
+import 'package:aqueduct/managed_auth.dart';
+import 'package:lapse_server/controllers/register_controller.dart';
+
 import 'lapse_server.dart';
 import 'model/lapse.dart';
 import 'model/user.dart';
@@ -52,13 +55,15 @@ class LapseServerChannel extends ApplicationChannel {
   Controller get entryPoint {
     final router = Router();
 
-    router.route("/auth/register").link(() => AuthCodeController(authServer));
+    router
+        .route("/auth/register")
+        .link(() => RegisterController(context, authServer));
 
     router.route("/auth/token").link(() => AuthController(authServer));
 
     router
         .route("/lapses/[:id]")
-//        .link(() => Authorizer.bearer(authServer))
+        .link(() => Authorizer.bearer(authServer))
         .link(() => ManagedObjectController<Lapse>(context));
 
     return router;
