@@ -1,10 +1,10 @@
-import 'package:lapse_server/lapse_server.dart';
 import 'package:aqueduct_test/aqueduct_test.dart';
+import 'package:lapse_server/lapse_server.dart';
 
-export 'package:lapse_server/lapse_server.dart';
-export 'package:aqueduct_test/aqueduct_test.dart';
-export 'package:test/test.dart';
 export 'package:aqueduct/aqueduct.dart';
+export 'package:aqueduct_test/aqueduct_test.dart';
+export 'package:lapse_server/lapse_server.dart';
+export 'package:test/test.dart';
 
 /// A testing harness for lapse_server.
 ///
@@ -19,14 +19,13 @@ export 'package:aqueduct/aqueduct.dart';
 ///           });
 ///         }
 ///
-class Harness extends TestHarness<LapseServerChannel> {
+class Harness extends TestHarness<LapseServerChannel> with TestHarnessORMMixin {
   @override
   Future onSetUp() async {
-
+    await resetData();
   }
 
+  // TODO: implement context
   @override
-  Future onTearDown() async {
-
-  }
+  ManagedContext get context => channel.context;
 }
