@@ -1,3 +1,6 @@
+import 'package:aqueduct/managed_auth.dart';
+import 'package:lapse_server/controllers/register_controller.dart';
+
 import 'lapse_server.dart';
 import 'model/lapse.dart';
 import 'model/user.dart';
@@ -21,14 +24,25 @@ class LapseServerChannel extends ApplicationChannel {
     logger.onRecord.listen(
         (rec) => print("$rec ${rec.error ?? ""} ${rec.stackTrace ?? ""}"));
 
-    final dataModel = ManagedDataModel.fromCurrentMirrorSystem();
-    final psc = PostgreSQLPersistentStore.fromConnectionInfo(
-        "lapse_server_user", "password", "localhost", 5432, "lapse_server");
+    final config = LapseConfiguraton(options.configurationFilePath);
 
-    context = ManagedContext(dataModel, psc);
+    context = contextWithConnectionInfo(config.database);
 
     final authStorage = ManagedAuthDelegate<User>(context);
     authServer = AuthServer(authStorage);
+  }
+
+  ManagedContext contextWithConnectionInfo(
+      DatabaseConfiguration connectionInfo) {
+    final dataModel = ManagedDataModel.fromCurrentMirrorSystem();
+    final psc = PostgreSQLPersistentStore(
+        connectionInfo.username,
+        connectionInfo.password,
+        connectionInfo.host,
+        connectionInfo.port,
+        connectionInfo.databaseName);
+
+    return ManagedContext(dataModel, psc);
   }
 
   /// Construct the request channel.
@@ -42,18 +56,22 @@ class LapseServerChannel extends ApplicationChannel {
     final router = Router();
 
     router
-      .route("/auth/register")
-      .link(() => AuthCodeController(authServer));
+        .route("/auth/register")
+        .link(() => RegisterController(context, authServer));
 
-    router
-        .route("/auth/token")
-        .link(() => AuthController(authServer));
+    router.route("/auth/token").link(() => AuthController(authServer));
 
     router
         .route("/lapses/[:id]")
-//        .link(() => Authorizer.bearer(authServer))
+        .link(() => Authorizer.bearer(authServer))
         .link(() => ManagedObjectController<Lapse>(context));
 
     return router;
   }
+}
+
+class LapseConfiguraton extends Configuration {
+  DatabaseConfiguration database;
+
+  LapseConfiguraton(String filename) : super.fromFile(File(filename));
 }
