@@ -9,14 +9,17 @@ class LapseController extends ManagedObjectController<Lapse> {
 
   LapseController(this.context) : super(context);
 
-  @Operation.get()
-  Future<Response> getNearbyCities(@Bind.body() LatLng latLng) async {
+  @Operation.get("lat", "long")
+  Future<Response> getNearbyCities(@Bind.query("lat") double latitude,
+      @Bind.query("long") double longitude) async {
+    final comparison = LatLng(latitude, longitude);
+
     final locations = await Query<Lapse>(context).fetch();
     final List<Lapse> filteredLocations = locations.where((location) {
       final locationLatLng = LatLng(location.latitude, location.longitude);
 
       final distance = DistanceLatLong.Distance()
-          .as(DistanceLatLong.LengthUnit.Kilometer, locationLatLng, latLng);
+          .as(DistanceLatLong.LengthUnit.Kilometer, locationLatLng, comparison);
 
       return distance <= 100; // TODO: Figure out the return value of
     });

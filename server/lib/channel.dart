@@ -68,7 +68,7 @@ class LapseServerChannel extends ApplicationChannel {
         .link(() => ManagedObjectController<Lapse>(context));
 
     router
-        .route("/lapses/nearby")
+        .route("/nearby")
         .link(() => Authorizer.bearer(authServer))
         .link(() => LapseController(context));
 
