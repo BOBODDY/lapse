@@ -4,14 +4,18 @@ import 'package:latlong/latlong.dart';
 
 import '../lapse_server.dart';
 
-class LapseController extends ManagedObjectController<Lapse> {
+class LapseController extends ResourceController {
   final ManagedContext context;
 
-  LapseController(this.context) : super(context);
+  LapseController(this.context);
 
-  @Operation.get("lat", "long")
+  @Operation.get()
   Future<Response> getNearbyCities(@Bind.query("lat") double latitude,
       @Bind.query("long") double longitude) async {
+    if (latitude == null || longitude == null) {
+      return Response.badRequest();
+    }
+
     final comparison = LatLng(latitude, longitude);
 
     final locations = await Query<Lapse>(context).fetch();
@@ -21,8 +25,8 @@ class LapseController extends ManagedObjectController<Lapse> {
       final distance = DistanceLatLong.Distance()
           .as(DistanceLatLong.LengthUnit.Kilometer, locationLatLng, comparison);
 
-      return distance <= 100; // TODO: Figure out the return value of
-    });
+      return distance <= 50; // TODO: Figure out the return value of
+    }).toList();
     return Response.ok(filteredLocations);
   }
 }
